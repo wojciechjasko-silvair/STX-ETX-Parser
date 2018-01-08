@@ -259,3 +259,33 @@ void test_StreamDecodeNoCRCSuccess_SplitOutput(void)
             sizeof(expected_decoded1),
             sizeof(expected_decoded1));
 }
+
+void test_StreamEncodeNoCRCSuccess_SplitOutput(void)
+{
+  STX_ETX_t stx_etx;
+  STX_ETX_Init(&stx_etx, &TC_ConfigNoCRC);
+
+  const char expected_encoded0[] = {STX, 0x00, 0x01, DLE};
+  const char expected_decoded0[] = {0x00, 0x01, DLE};
+
+  const char expected_encoded1[] = {DLE, ETX};
+  const char expected_decoded1[] = {DLE};
+
+  TC_Encode(&stx_etx,
+            STX_ETX_STATUS_OVERFLOW,
+            expected_encoded0,
+            sizeof(expected_encoded0),
+            sizeof(expected_encoded0),
+            expected_decoded0,
+            2,
+            sizeof(expected_decoded0));
+
+  TC_Encode(&stx_etx,
+            STX_ETX_STATUS_DONE,
+            expected_encoded1,
+            sizeof(expected_encoded1),
+            sizeof(expected_encoded1),
+            expected_decoded1,
+            sizeof(expected_decoded1),
+            sizeof(expected_decoded1));
+}

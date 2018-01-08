@@ -6,8 +6,8 @@
 
 const STX_ETX_Config_t TC_ConfigNoCRC = 
 {
-  .crc16_init   = NULL,
-  .crc16_update = NULL,
+  .init_crc16   = NULL,
+  .update_crc16 = NULL,
 };
 
 void setUp(void)

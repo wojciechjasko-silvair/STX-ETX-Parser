@@ -34,6 +34,14 @@ typedef enum
   STX_ETX_STATUS_ERR_LAST,
 } STX_ETX_Status_t;
 
+/** @brief STX ETX States. */
+typedef enum
+{
+  STX_ETX_STATE_IDLE,
+  STX_ETX_STATE_STARTED,
+  STX_ETX_STATE_DLE_LATCHED,
+  STX_ETX_STATE_CRC0_LATCHED,
+} STX_ETX_State_t;
 
 /** @brief STX ETX Config. */
 typedef struct
@@ -46,7 +54,7 @@ typedef struct
    *
    *  @return void.
    **/
-  void (*crc16_init)(uint16_t * p_crc);
+  void (*init_crc16)(uint16_t * p_crc);
 
   /** @brief  Update crc16.
    *
@@ -57,17 +65,16 @@ typedef struct
    *
    *  @return void.
    **/
-  void (*crc16_update)(uint16_t * p_crc, char value);
+  void (*update_crc16)(uint16_t * p_crc, char value);
 } STX_ETX_Config_t;
 
 
 /** @brief STX ETX Instance. */
 typedef struct
 {
-  bool                           is_started;      //!< True, if conversion is started.
-  bool                           is_dle_latched;  //!< True, if dle is latched.
-  uint16_t                       crc16;           //!< CRC.
-  STX_ETX_Config_t const *       p_config;        //!< Pointer to configuration.
+  STX_ETX_State_t                state;    //!< State.
+  uint16_t                       crc16;    //!< CRC.
+  STX_ETX_Config_t const *       p_config; //!< Pointer to configuration.
 } STX_ETX_t;
 
 /********************************************

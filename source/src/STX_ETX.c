@@ -297,7 +297,7 @@ STX_ETX_Status_t STX_ETX_Decode(STX_ETX_t *     p_instance,
     }
   }
 
-  if (STX_ETX_IsError(status) || (STX_ETX_STATUS_DONE == status))
+  if ((STX_ETX_STATUS_OVERFLOW != status) && (STX_ETX_STATUS_CONTINUE != status))
   {
     STX_ETX_Reset(p_instance);
   }
@@ -357,6 +357,11 @@ STX_ETX_Status_t STX_ETX_Encode(STX_ETX_t *     p_instance,
   if (p_instance->state == STX_ETX_STATE_CRC_BYTE_1)
   {
     status = STX_ETX_EncodeCrcByte1(p_instance, p_out, *p_out_len, &out_index);
+  }
+
+  if ((STX_ETX_STATUS_OVERFLOW != status) && (STX_ETX_STATUS_CONTINUE != status))
+  {
+    STX_ETX_Reset(p_instance);
   }
 
   *p_in_len  = in_index;

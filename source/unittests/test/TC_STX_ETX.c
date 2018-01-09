@@ -494,3 +494,64 @@ void test_StreamDecodeCRCSuccess_SplitInput_2(void)
             0,
             0);
 }
+
+void test_DoubleDecodeCRCSuccess(void)
+{
+  STX_ETX_t stx_etx;
+  STX_ETX_Init(&stx_etx, &TC_ConfigCRC);
+
+  const uint8_t expected_encoded0[] = {STX, 0x00, 0x01, DLE, STX, ETX, 0x92, 0xE9};
+  const uint8_t expected_decoded0[] = {0x00, 0x01, STX};
+
+  const uint8_t expected_encoded1[] = {STX, 0x00, 0x01, DLE, ETX, ETX, 0x91, 0x6F};
+  const uint8_t expected_decoded1[] = {0x00, 0x01, ETX};
+
+  TC_Decode(&stx_etx,
+            STX_ETX_STATUS_DONE,
+            expected_encoded0,
+            sizeof(expected_encoded0),
+            sizeof(expected_encoded0),
+            expected_decoded0,
+            sizeof(expected_decoded0),
+            sizeof(expected_decoded0));
+
+  TC_Decode(&stx_etx,
+            STX_ETX_STATUS_DONE,
+            expected_encoded1,
+            sizeof(expected_encoded1),
+            sizeof(expected_encoded1),
+            expected_decoded1,
+            sizeof(expected_decoded1),
+            sizeof(expected_decoded1));
+}
+
+
+void test_DoubleEncodeCRCSuccess(void)
+{
+  STX_ETX_t stx_etx;
+  STX_ETX_Init(&stx_etx, &TC_ConfigCRC);
+
+  const uint8_t expected_encoded0[] = {STX, 0x00, 0x01, DLE, STX, ETX, 0x92, 0xE9};
+  const uint8_t expected_decoded0[] = {0x00, 0x01, STX};
+
+  const uint8_t expected_encoded1[] = {STX, 0x00, 0x01, DLE, ETX, ETX, 0x91, 0x6F};
+  const uint8_t expected_decoded1[] = {0x00, 0x01, ETX};
+
+  TC_Encode(&stx_etx,
+            STX_ETX_STATUS_DONE,
+            expected_encoded0,
+            sizeof(expected_encoded0),
+            sizeof(expected_encoded0),
+            expected_decoded0,
+            sizeof(expected_decoded0),
+            sizeof(expected_decoded0));
+
+  TC_Encode(&stx_etx,
+            STX_ETX_STATUS_DONE,
+            expected_encoded1,
+            sizeof(expected_encoded1),
+            sizeof(expected_encoded1),
+            expected_decoded1,
+            sizeof(expected_decoded1),
+            sizeof(expected_decoded1));
+}

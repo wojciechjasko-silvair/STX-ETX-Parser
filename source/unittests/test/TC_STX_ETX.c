@@ -71,7 +71,10 @@ static void TC_Decode(STX_ETX_t *      p_instance,
   TEST_ASSERT_EQUAL_HEX8(expected_status, status);
   TEST_ASSERT_EQUAL(expected_encoded_len, encoded_len);
   TEST_ASSERT_EQUAL(expected_decoded_len, decoded_len);
-  TEST_ASSERT_EQUAL_HEX8_ARRAY(p_expeced_decoded, decoded, decoded_len);
+  if (0 != decoded_len)
+  {
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(p_expeced_decoded, decoded, decoded_len);
+  }
 }
 
 static void TC_Encode(STX_ETX_t *      p_instance,
@@ -127,14 +130,16 @@ static void TC_SingleProcessSuccess(STX_ETX_Config_t const * p_config,
             expected_decoded_len);
 }
 
-static void TC_DecodeFail(const uint8_t * p_expected_encoded,
-                          size_t          expected_encoded_len,
-                          size_t          expected_decoded_len)
+static void TC_DecodeFail(STX_ETX_Config_t const * p_config,
+                          const uint8_t *          p_expected_encoded,
+                          size_t                   expected_encoded_len,
+                          size_t                   expected_decoded_len,
+                          STX_ETX_Status_t         expected_status)
 {
   uint8_t decoded[expected_decoded_len];
 
   STX_ETX_t stx_etx;
-  STX_ETX_Init(&stx_etx, &TC_ConfigNoCRC);
+  STX_ETX_Init(&stx_etx, p_config);
 
   size_t           encoded_len  = expected_encoded_len;
   size_t           decoded_len  = expected_decoded_len;
@@ -144,7 +149,7 @@ static void TC_DecodeFail(const uint8_t * p_expected_encoded,
                                                  decoded,
                                                  &decoded_len);
 
-  TEST_ASSERT_EQUAL_HEX8(STX_ETX_STATUS_INV_CHAR, status);
+  TEST_ASSERT_EQUAL_HEX8(expected_status, status);
 }
 
 
@@ -212,27 +217,33 @@ void test_DecodeNoSTX(void)
 {
   const uint8_t expected_encoded[] = {0xFF, STX, 0x00, ETX};
 
-  TC_DecodeFail(expected_encoded,
+  TC_DecodeFail(&TC_ConfigNoCRC,
+                expected_encoded,
                 sizeof(expected_encoded),
-                sizeof(expected_encoded));
+                sizeof(expected_encoded),
+                STX_ETX_STATUS_INV_CHAR);
 }
 
 void test_DecodeSTXwithoutDLE(void)
 {
   const uint8_t expected_encoded[] = {STX, STX, 0x00, ETX};
 
-  TC_DecodeFail(expected_encoded,
+  TC_DecodeFail(&TC_ConfigNoCRC,
+                expected_encoded,
                 sizeof(expected_encoded),
-                sizeof(expected_encoded));
+                sizeof(expected_encoded),
+                STX_ETX_STATUS_INV_CHAR);
 }
 
 void test_DecodeSingleDLE(void)
 {
   const uint8_t expected_encoded[] = {STX, 0x00, DLE, 0x12, ETX};
 
-  TC_DecodeFail(expected_encoded,
+  TC_DecodeFail(&TC_ConfigNoCRC,
+                expected_encoded,
                 sizeof(expected_encoded),
-                sizeof(expected_encoded));
+                sizeof(expected_encoded),
+                STX_ETX_STATUS_INV_CHAR);
 }
 
 void test_StreamDecodeNoCRCSuccess_SplitInput(void)
@@ -265,7 +276,7 @@ void test_StreamDecodeNoCRCSuccess_SplitInput(void)
             sizeof(expected_decoded1));
 }
 
-void test_StreamDecodeNoCRCSuccess_SplitOutput(void)
+void test_StreamDecodeNoCRCSuccess_SplitOutput1(void)
 {
   STX_ETX_t stx_etx;
   STX_ETX_Init(&stx_etx, &TC_ConfigNoCRC);
@@ -295,7 +306,7 @@ void test_StreamDecodeNoCRCSuccess_SplitOutput(void)
             sizeof(expected_decoded1));
 }
 
-void test_StreamEncodeNoCRCSuccess_SplitOutput1(void)
+void test_StreamEncodeNoCRCSuccess_SplitOutput2(void)
 {
   STX_ETX_t stx_etx;
   STX_ETX_Init(&stx_etx, &TC_ConfigNoCRC);
@@ -325,7 +336,7 @@ void test_StreamEncodeNoCRCSuccess_SplitOutput1(void)
             sizeof(expected_decoded1));
 }
 
-void test_StreamEncodeNoCRCSuccess_SplitOutput2(void)
+void test_StreamEncodeNoCRCSuccess_SplitOutput3(void)
 {
   STX_ETX_t stx_etx;
   STX_ETX_Init(&stx_etx, &TC_ConfigNoCRC);
@@ -413,4 +424,73 @@ void test_SingleProcessCRCSuccess_5(void)
                           sizeof(expected_encoded),
                           expected_decoded,
                           sizeof(expected_decoded));
+}
+
+void test_DecodeInvalidCRC(void)
+{
+  const uint8_t expected_encoded[] = {STX, 0x00, 0x01, DLE, ETX, ETX, 0x01, 0x02};
+
+  TC_DecodeFail(&TC_ConfigCRC,
+                expected_encoded,
+                sizeof(expected_encoded),
+                sizeof(expected_encoded),
+                STX_ETX_STATUS_INV_CRC);
+}
+
+void test_StreamDecodeCRCSuccess_SplitInput_1(void)
+{
+  STX_ETX_t stx_etx;
+  STX_ETX_Init(&stx_etx, &TC_ConfigCRC);
+
+  const uint8_t expected_encoded0[] = {STX, 0x00, 0x01, ETX};
+  const uint8_t expected_decoded0[] = {0x00, 0x01};
+
+  const uint8_t expected_encoded1[] = {0x2E, 0x2E};
+
+  TC_Decode(&stx_etx,
+            STX_ETX_STATUS_CONTINUE,
+            expected_encoded0,
+            sizeof(expected_encoded0),
+            sizeof(expected_encoded0),
+            expected_decoded0,
+            sizeof(expected_decoded0),
+            sizeof(expected_decoded0));
+
+  TC_Decode(&stx_etx,
+            STX_ETX_STATUS_DONE,
+            expected_encoded1,
+            sizeof(expected_encoded1),
+            sizeof(expected_encoded1),
+            NULL,
+            0,
+            0);
+}
+
+void test_StreamDecodeCRCSuccess_SplitInput_2(void)
+{
+  STX_ETX_t stx_etx;
+  STX_ETX_Init(&stx_etx, &TC_ConfigCRC);
+
+  const uint8_t expected_encoded0[] = {STX, 0x00, 0x01, ETX, 0x2E};
+  const uint8_t expected_decoded0[] = {0x00, 0x01};
+
+  const uint8_t expected_encoded1[] = {0x2E};
+
+  TC_Decode(&stx_etx,
+            STX_ETX_STATUS_CONTINUE,
+            expected_encoded0,
+            sizeof(expected_encoded0),
+            sizeof(expected_encoded0),
+            expected_decoded0,
+            sizeof(expected_decoded0),
+            sizeof(expected_decoded0));
+
+  TC_Decode(&stx_etx,
+            STX_ETX_STATUS_DONE,
+            expected_encoded1,
+            sizeof(expected_encoded1),
+            sizeof(expected_encoded1),
+            NULL,
+            0,
+            0);
 }
